@@ -1,0 +1,9 @@
+# models, NN
+torch>=1.8,<2.0
+transformers>=4.4,<5.0
+numpy>=1.10,<2.0
+spacy>=3.0,<4.0
+scikit-learn>=0.22,<1.0
+
+# utils
+requests>=2.0,<3.0
