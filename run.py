@@ -18,6 +18,7 @@ def main(
     save_path: Optional[str],
     device_name: Optional[str],
     batch_size: int,
+    learning_rate: float,
     fix_valid_set: bool,
     evaluation_only: bool,
     notebook: bool,
@@ -69,7 +70,7 @@ def main(
 
     # Training
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=1e-5)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
     best_loss = float("inf")
     for epoch in range(20):  # loop over the dataset multiple times
@@ -163,6 +164,9 @@ def parse_args():
     parser.add_argument(
         "--notebook", action="store_true", help="Use notebook progress bar"
     )
+    parser.add_argument(
+        "--learning-rate", float=1e-4, help='Learning rate.'
+    )
 
     args, _ = parser.parse_known_args()
     return args
@@ -175,8 +179,9 @@ if __name__ == "__main__":
         model_path=args.model_path,
         save_path=args.save_path,
         fix_valid_set=args.fix_valid_set,
+        batch_size=args.batch_size,
+        learning_rate=args.learning_rate,
         evaluation_only=args.eval_only,
         device_name=args.device,
         notebook=args.notebook,
-        batch_size=args.batch_size,
     )
