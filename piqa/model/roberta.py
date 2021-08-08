@@ -1,11 +1,9 @@
 from transformers import RobertaForSequenceClassification, PreTrainedModel, RobertaConfig, RobertaModel
 from transformers.modeling_outputs import SequenceClassifierOutput
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-
-
-class RobertaPIQA(RobertaForSequenceClassification):
-    pass
+import torch.nn.functional as F
 
 
 class RobertaClassificationHead(nn.Module):
@@ -27,20 +25,20 @@ class RobertaClassificationHead(nn.Module):
         return x
 
 
-class RobertaPIQA(PreTrainedModel):
+class RobertaPIQAModule(PreTrainedModel):
     _keys_to_ignore_on_load_missing = [r"position_ids"]
     config_class = RobertaConfig
     base_model_prefix = "roberta"
 
     def __init__(self):
         config = RobertaConfig.from_pretrained('roberta-large')
-        config.num_labels = 1
+        config.num_labels = 2
 
         super().__init__(config)
         self.num_labels = config.num_labels
         self.config = config
 
-        self.roberta = RobertaModel(config, add_pooling_layer=False).from_pretrained("roberta-large")
+        self.roberta = RobertaModel(config, add_pooling_layer=False).from_pretrained("roberta-large", num_labels=config.num_labels)
         self.classifier = RobertaClassificationHead(config)
 
         self.init_weights()
@@ -97,3 +95,58 @@ class RobertaPIQA(PreTrainedModel):
         sequence_output = outputs[0]
         logits = self.classifier(sequence_output)
         return logits
+
+
+class RobertaPIQA(RobertaPIQAModule, pl.LightningModule):
+    def training_step(self, batch, batch_idx):
+        # unpack batch
+        inp1, inp2 = batch["input1"], batch["input2"]
+        label = batch["label"]
+
+        inp1, inp2, label = inp1.to(self.device), inp2.to(self.device), label.to(self.device)
+        # forward + loss
+        output1, output2 = self.forward(inp1), self.forward(inp2)
+        loss1 = F.cross_entropy(output1, label)
+        loss2 = F.cross_entropy(output2, label)
+
+        # make so that the loss is summed
+        return (loss1 + loss2)
+
+    def validation_step(self, batch, batch_idx):
+        return self._shared_eval(batch, batch_idx, 'val')
+
+    def test_step(self, batch, batch_idx):
+        return self._shared_eval(batch, batch_idx, 'test')
+
+    def _shared_eval(self, batch, batch_idx, prefix):
+        # unpack batch
+        inp1, inp2 = batch["input1"], batch["input2"]
+        label = batch["label"] if "label" in batch else None
+        inp1, inp2, label = inp1.to(self.device), inp2.to(self.device), label.to(self.device)
+
+        # forward + loss
+        output1, output2 = self.forward(inp1), self.forward(inp2)
+        loss1 = F.cross_entropy(output1, label)
+        loss2 = F.cross_entropy(output2, label)
+
+        # make so that the loss is summed
+        return (loss1 + loss2)
+
+    def configure_optimizers(self):
+        param_optimizer = list(self.named_parameters())
+        no_decay = ["bias", "gamma", "beta"]
+        optimizer_grouped_parameters = [
+                {
+                    "params": [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)],
+                    "weight_decay_rate": 0.01
+                    },
+                {
+                    "params": [p for n, p in param_optimizer if any(nd in n for nd in no_decay)],
+                    "weight_decay_rate": 0.0
+                    },
+                ]
+        optimizer = torch.optim.AdamW(
+                optimizer_grouped_parameters,
+                lr=2e-5,
+                )
+        return optimizer

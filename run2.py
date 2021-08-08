@@ -11,6 +11,8 @@ from piqa.data import PiqaDataset
 from piqa.model.roberta import RobertaPIQA
 from piqa.model.roberta_tokenizer import RobertaPIQATokenizer
 
+import pytorch_lightning as pl
+
 
 def main(
     model_type: str,
@@ -69,60 +71,8 @@ def main(
     validloader = DataLoader(valid_set, shuffle=False, collate_fn=collate_fn, batch_size=batch_size)
 
     # Training
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
-
-    best_loss = float("inf")
-    for epoch in range(20):  # loop over the dataset multiple times
-
-        running_loss = 0.0
-        model.train()
-        for i, data in tqdm(enumerate(trainloader, 0), total=len(trainloader)):
-            inp1, inp2 = data["input1"], data["input2"]
-            label = data["label"]
-            inp1, inp2, label = inp1.to(device), inp2.to(device), label.to(device)
-
-            # zero the parameter gradients
-            optimizer.zero_grad()
-
-            # forward + backward + optimize
-            output1, output2 = model(inp1), model(inp2)
-            outputs = softmax(torch.cat((output1, output2), dim=1), dim=1)
-            loss = criterion(outputs, label)
-            loss.backward()
-            optimizer.step()
-
-            # print statistics
-            running_loss += loss.item()
-            if i % 500 == 499:  # print every 500 mini-batches
-                print("[Epoch %d, iter %5d] loss: %.3f" % (epoch + 1, i + 1, running_loss / 500))
-                running_loss = 0.0
-
-        # Validation
-        model.eval()
-        val_loss = 0.0
-        accurate = 0
-        for i, data in tqdm(enumerate(validloader, 0), total=len(validloader)):
-            inp1, inp2 = data["input1"], data["input2"]
-            label = data["label"]
-            inp1, inp2, label = inp1.to(device), inp2.to(device), label.to(device)
-
-            output1, output2 = model(inp1), model(inp2)
-            outputs = softmax(torch.cat((output1, output2), dim=1), dim=1)
-            loss = criterion(outputs, label)
-
-            accurate += torch.sum(torch.argmax(outputs, dim=1) == label).item()
-            val_loss += loss.item()
-
-        print(
-            "[Epoch %d, iter %5d] validation loss: %.3f | accuracy: %.3f"
-            % (epoch + 1, len(validloader), val_loss / len(validloader), accurate / len(valid_set))
-        )
-
-        if val_loss < best_loss:
-            best_loss = val_loss
-            if save_path is not None:
-                torch.save(model, save_path)
+    trainer = pl.Trainer(gpus=1)
+    trainer.fit(model, trainloader, validloader)
 
     print("Finished Training")
 
@@ -165,7 +115,7 @@ def parse_args():
         "--notebook", action="store_true", help="Use notebook progress bar"
     )
     parser.add_argument(
-        "--learning-rate", float=1e-4, help='Learning rate.'
+        "--learning-rate", type=float, default=1e-4, help='Learning rate.'
     )
 
     args, _ = parser.parse_known_args()
