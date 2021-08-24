@@ -61,7 +61,6 @@ def main(
         model.eval()
     else:
         model.train()
-    model.to(device)
 
     # Pre-tokenize data sets
     collate_fn = lambda x: tokenizer.collate_fn(x, pad_token=tokenizer.pad_token_id)
@@ -73,7 +72,7 @@ def main(
     validloader = DataLoader(valid_set, shuffle=False, collate_fn=collate_fn, batch_size=batch_size)
 
     # Training
-    trainer = pl.Trainer(gpus=gpus)
+    trainer = pl.Trainer(gpus=gpus, auto_scale_batch_size=False)
     trainer.fit(model, trainloader, validloader)
 
     print("Finished Training")
