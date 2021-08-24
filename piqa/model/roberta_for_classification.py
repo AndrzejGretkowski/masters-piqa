@@ -21,11 +21,10 @@ class RobertaPIQA(pl.LightningModule):
         return self.model.forward(*args, **kwargs)
 
     def training_step(self, batch, batch_idx):
+        # unpack batch
         input = batch['input_ids']
         mask = batch['attention_mask']
         label = batch['label']
-        # unpack batch
-        input, mask, label = input.to(self.device), mask.to(self.device), label.to(self.device)
         # forward + loss
         output = self(input_ids=input, attention_mask=mask)
         loss = F.cross_entropy(F.softmax(output.logits, 1), label)
@@ -40,11 +39,10 @@ class RobertaPIQA(pl.LightningModule):
         return self._shared_eval(batch, batch_idx, 'test')
 
     def _shared_eval(self, batch, batch_idx, prefix):
+        # unpack batch
         input = batch['input_ids']
         mask = batch['attention_mask']
         label = batch['label']
-        # unpack batch
-        input, mask, label = input.to(self.device), mask.to(self.device), label.to(self.device)
         # forward + loss
         output = self(input_ids=input, attention_mask=mask)
         loss = F.cross_entropy(F.softmax(output.logits, 1), label)
