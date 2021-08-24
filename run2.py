@@ -1,5 +1,6 @@
 import argparse
 from typing import Optional
+from warnings import warn
 
 import torch
 from torch import nn as nn
@@ -8,7 +9,7 @@ from torch.nn.functional import softmax
 from torch.utils.data import DataLoader
 
 from piqa.data import PiqaDataset
-from piqa.model.roberta import RobertaPIQA
+from piqa.model.roberta_for_classification import RobertaPIQA
 from piqa.model.roberta_tokenizer import RobertaPIQATokenizer
 
 import pytorch_lightning as pl
@@ -18,7 +19,7 @@ def main(
     model_type: str,
     model_path: Optional[str],
     save_path: Optional[str],
-    device_name: Optional[str],
+    gpus: int,
     batch_size: int,
     learning_rate: float,
     fix_valid_set: bool,
@@ -26,9 +27,10 @@ def main(
     notebook: bool,
 ):
     # Device
-    if device_name == "cuda" and not torch.cuda.is_available():
-        device_name = "cpu"
-    device = torch.device(device_name)
+    if gpus > 0 and not torch.cuda.is_available():
+        gpus = 0
+        warn('GPU is not available on this machine. Using CPU instead.')
+    device = torch.device('cuda') if gpus > 0 else torch.device('cpu')
 
     # TQDM
     if notebook:
@@ -71,7 +73,7 @@ def main(
     validloader = DataLoader(valid_set, shuffle=False, collate_fn=collate_fn, batch_size=batch_size)
 
     # Training
-    trainer = pl.Trainer(gpus=1)
+    trainer = pl.Trainer(gpus=gpus)
     trainer.fit(model, trainloader, validloader)
 
     print("Finished Training")
@@ -105,11 +107,10 @@ def parse_args():
     )
     parser.add_argument("--batch_size", type=int, default=6, help="Batch size.")
     parser.add_argument(
-        "--device",
-        type=str,
-        default="cpu",
-        choices=["cpu", "cuda"],
-        help="Train on chosen device. Defaults to cpu.",
+        "--gpus",
+        type=int,
+        default=1,
+        help="Number of gpus used.",
     )
     parser.add_argument(
         "--notebook", action="store_true", help="Use notebook progress bar"
@@ -132,6 +133,6 @@ if __name__ == "__main__":
         batch_size=args.batch_size,
         learning_rate=args.learning_rate,
         evaluation_only=args.eval_only,
-        device_name=args.device,
+        gpus=args.gpus,
         notebook=args.notebook,
     )
