@@ -30,19 +30,14 @@ class RobertaPIQA(pl.LightningModule):
         output = self.model(
             input_ids=input,
             attention_mask=mask,
-            token_type_ids=token_type)
-        loss = F.cross_entropy(F.softmax(output.logits, 1), label)
-        # make so that the loss is summed
+            token_type_ids=token_type,
+            labels=label)
+
+        loss = output.loss
         self.log('train_loss', loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        return self._shared_eval(batch, batch_idx, 'val')
-
-    def test_step(self, batch, batch_idx):
-        return self._shared_eval(batch, batch_idx, 'test')
-
-    def _shared_eval(self, batch, batch_idx, prefix):
         # unpack batch
         input = batch['input_ids']
         mask = batch['attention_mask']
@@ -52,11 +47,27 @@ class RobertaPIQA(pl.LightningModule):
         output = self.model(
             input_ids=input,
             attention_mask=mask,
-            token_type_ids=token_type)
-        loss = F.cross_entropy(F.softmax(output.logits, 1), label)
+            token_type_ids=token_type,
+            labels=label)
+
+        loss = output.loss
         # make so that the loss is summed
-        self.log(f'{prefix}_loss', loss)
+        self.log('val_loss', loss)
         return loss
+
+    def test_step(self, batch, batch_idx):
+        # unpack batch
+        input = batch['input_ids']
+        mask = batch['attention_mask']
+        token_type = batch['token_type_ids']
+        # forward + loss
+        output = self.model(
+            input_ids=input,
+            attention_mask=mask,
+            token_type_ids=token_type)
+
+        self.log(f'test_loss', 0.0)
+        return {'loss': 0.0, 'logits': output.logits}
 
     def configure_optimizers(self):
         param_optimizer = list(self.named_parameters())
