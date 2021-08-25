@@ -5,9 +5,9 @@ from torch.nn.utils.rnn import pad_sequence
 
 
 class RobertaPIQATokenizer(RobertaTokenizerFast):
-    def tokenize_data_set(self, dataset):
+    def tokenize_data_set(self, dataset, max_length=512):
         for item in dataset:
-            out = self([item['goal']] * 2, [item['sol1'], item['sol2']], return_tensors='pt', padding=True)
+            out = self([item['goal']] * 2, [item['sol1'], item['sol2']], return_tensors='pt', padding=True, max_length=max_length)
             out['input_ids'] = out['input_ids'].transpose(1, 0)
             out['attention_mask'] = out['attention_mask'].transpose(1, 0)
             item.update(out)

@@ -64,11 +64,11 @@ def main(
 
     # Pre-tokenize data sets
     collate_fn = lambda x: tokenizer.collate_fn(x, pad_token=tokenizer.pad_token_id)
-    train_set = tokenizer.tokenize_data_set(train_set)
+    train_set = tokenizer.tokenize_data_set(train_set, 512)
     trainloader = DataLoader(train_set, shuffle=True, collate_fn=collate_fn, batch_size=batch_size)
-    test_set = tokenizer.tokenize_data_set(test_set)
+    test_set = tokenizer.tokenize_data_set(test_set, 512)
     testloader = DataLoader(test_set, shuffle=False, collate_fn=collate_fn)
-    valid_set = tokenizer.tokenize_data_set(valid_set)
+    valid_set = tokenizer.tokenize_data_set(valid_set, 512)
     validloader = DataLoader(valid_set, shuffle=False, collate_fn=collate_fn, batch_size=batch_size)
 
     # Training
