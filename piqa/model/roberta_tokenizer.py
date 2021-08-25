@@ -10,19 +10,21 @@ class RobertaPIQATokenizer(RobertaTokenizerFast):
             out = self([item['goal']] * 2, [item['sol1'], item['sol2']], return_tensors='pt', padding=True, max_length=max_length)
             out['input_ids'] = out['input_ids'].transpose(1, 0)
             out['attention_mask'] = out['attention_mask'].transpose(1, 0)
+            out['token_type_ids'] = torch.zeros(out['input_ids'].size())
             item.update(out)
         return dataset
 
     @staticmethod
     def collate_fn(batch, pad_token, att_token = 0):
         goal, sol1, sol2, label = [], [], [], []
-        input, mask = [], []
+        input, mask, type = [], [], []
         for item in batch:
             goal.append(item['goal'])
             sol1.append(item['sol1'])
             sol2.append(item['sol2'])
             input.append(torch.LongTensor(item['input_ids']))
             mask.append(torch.LongTensor(item['attention_mask']))
+            type.append(torch.LongTensor(item['token_type_ids']))
 
             if 'label' in item:
                 label.append(item['label'])
@@ -33,6 +35,7 @@ class RobertaPIQATokenizer(RobertaTokenizerFast):
             'sol2': sol2,
             'input_ids': pad_sequence(input, batch_first=True, padding_value=pad_token).transpose(1, 2).contiguous(),
             'attention_mask': pad_sequence(mask, batch_first=True, padding_value=att_token).transpose(1, 2).contiguous(),
+            'token_type_ids': pad_sequence(type, batch_first=True, padding_value=0).transpose(1, 2).contiguous()
         }
 
         if len(label) == len(goal):

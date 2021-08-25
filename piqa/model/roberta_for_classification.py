@@ -24,9 +24,13 @@ class RobertaPIQA(pl.LightningModule):
         # unpack batch
         input = batch['input_ids']
         mask = batch['attention_mask']
+        token_type = batch['token_type_ids']
         label = batch['label']
         # forward + loss
-        output = self(input_ids=input, attention_mask=mask)
+        output = self(
+            input_ids=input,
+            attention_mask=mask,
+            token_type_ids=token_type)
         loss = F.cross_entropy(F.softmax(output.logits, 1), label)
         # make so that the loss is summed
         self.log('train_loss', loss)
@@ -42,9 +46,13 @@ class RobertaPIQA(pl.LightningModule):
         # unpack batch
         input = batch['input_ids']
         mask = batch['attention_mask']
+        token_type = batch['token_type_ids']
         label = batch['label']
         # forward + loss
-        output = self(input_ids=input, attention_mask=mask)
+        output = self(
+            input_ids=input,
+            attention_mask=mask,
+            token_type_ids=token_type)
         loss = F.cross_entropy(F.softmax(output.logits, 1), label)
         # make so that the loss is summed
         self.log(f'{prefix}_loss', loss)
