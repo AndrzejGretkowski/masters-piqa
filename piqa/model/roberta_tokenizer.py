@@ -10,7 +10,7 @@ class RobertaPIQATokenizer(RobertaTokenizerFast):
             out = self([item['goal']] * 2, [item['sol1'], item['sol2']], return_tensors='pt', padding=True, max_length=max_length)
             out['input_ids'] = out['input_ids'].transpose(1, 0)
             out['attention_mask'] = out['attention_mask'].transpose(1, 0)
-            out['token_type_ids'] = torch.zeros(out['input_ids'].size())
+            out['token_type_ids'] = torch.zeros(out['input_ids'].size(), dtype=torch.long)
             item.update(out)
         return dataset
 

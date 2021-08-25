@@ -27,7 +27,7 @@ class RobertaPIQA(pl.LightningModule):
         token_type = batch['token_type_ids']
         label = batch['label']
         # forward + loss
-        output = self(
+        output = self.model(
             input_ids=input,
             attention_mask=mask,
             token_type_ids=token_type)
@@ -49,7 +49,7 @@ class RobertaPIQA(pl.LightningModule):
         token_type = batch['token_type_ids']
         label = batch['label']
         # forward + loss
-        output = self(
+        output = self.model(
             input_ids=input,
             attention_mask=mask,
             token_type_ids=token_type)
