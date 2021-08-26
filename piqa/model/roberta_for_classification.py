@@ -52,9 +52,14 @@ class RobertaPIQA(pl.LightningModule):
             labels=label)
 
         loss = output.loss
+        out = torch.argmax(output.logits, dim=1)
+        correct = sum(out == label).item()
+        acc = correct / len(label)
+
         # make so that the loss is summed
         self.log('val_loss', loss)
-        return loss
+        self.log('val_accuracy', acc, on_epoch=True, prog_bar=True)
+        return {'loss': loss, 'logits': output.logits, 'output': out, 'correct': correct}
 
     def test_step(self, batch, batch_idx):
         # unpack batch
@@ -67,10 +72,12 @@ class RobertaPIQA(pl.LightningModule):
             attention_mask=mask,
             token_type_ids=token_type)
 
-        self.log(f'test_loss', 0.0)
-        return {'loss': 0.0, 'logits': output.logits}
+        out = torch.argmax(output.logits, dim=1)
 
-    def validation_epoch_end(self, batch, outs):
+        self.log(f'test_loss', 0.0)
+        return {'loss': 0.0, 'logits': output.logits, 'output': out}
+
+    def validation_epoch_end(self, outs):
         # outs is a list of whatever you returned in `validation_step`
         loss = torch.stack(outs).mean()
         self.log("val_loss", loss)
