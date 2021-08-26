@@ -44,9 +44,9 @@ def main(
     test_set = PiqaDataset("test", fix=fix_valid_set)
 
     # Model & Tokenizer
-    if model_type == "roberta":
-        model = RobertaPIQA(learning_rate=learning_rate)
-        tokenizer = RobertaPIQATokenizer.from_pretrained("roberta-large")
+    if model_type.startswith('roberta'):
+        model = RobertaPIQA(learning_rate=learning_rate, roberta_type=model_type)
+        tokenizer = RobertaPIQATokenizer.from_pretrained(model_type)
     elif model_type == "alberta":
         raise NotImplementedError("Alberta model has not been implemented yet.")
     else:
@@ -91,8 +91,8 @@ def parse_args():
         "-m",
         "--model-type",
         type=str,
-        choices=["roberta", "alberta"],
-        default="roberta",
+        choices=["roberta-large", "roberta-base"],
+        default="roberta-base",
         help="type of model to use",
     )
     parser.add_argument(

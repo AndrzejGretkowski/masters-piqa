@@ -7,15 +7,15 @@ import torch.nn.functional as F
 
 
 class RobertaPIQA(pl.LightningModule):
-    def __init__(self, learning_rate: float):
+    def __init__(self, learning_rate: float, roberta_type: str = 'roberta-base'):
         super().__init__()
-        config = RobertaConfig.from_pretrained('roberta-large')
+        config = RobertaConfig.from_pretrained(roberta_type)
         config.num_labels = 2
         self.num_labels = config.num_labels
         self.config = config
         self.lr = learning_rate
 
-        self.model = RobertaForMultipleChoice(config).from_pretrained('roberta-large', num_labels=self.num_labels)
+        self.model = RobertaForMultipleChoice(config).from_pretrained(roberta_type, num_labels=self.num_labels)
         # self.model.init_weights()
 
     def forward(self, *args, **kwargs) -> MultipleChoiceModelOutput:
@@ -69,6 +69,11 @@ class RobertaPIQA(pl.LightningModule):
 
         self.log(f'test_loss', 0.0)
         return {'loss': 0.0, 'logits': output.logits}
+
+    def validation_epoch_end(self, batch, outs):
+        # outs is a list of whatever you returned in `validation_step`
+        loss = torch.stack(outs).mean()
+        self.log("val_loss", loss)
 
     def configure_optimizers(self):
         param_optimizer = list(self.named_parameters())
