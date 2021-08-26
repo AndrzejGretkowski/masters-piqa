@@ -84,7 +84,7 @@ class RobertaPIQA(pl.LightningModule):
         return {'loss': 0.0, 'logits': output.logits, 'output': out}
 
     def configure_optimizers(self):
-        return torch.optim.AdamW(
+        return torch.optim.Adam(
             self.parameters(),
             lr=self.lr,
         )
