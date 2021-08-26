@@ -77,11 +77,6 @@ class RobertaPIQA(pl.LightningModule):
         self.log(f'test_loss', 0.0)
         return {'loss': 0.0, 'logits': output.logits, 'output': out}
 
-    def validation_epoch_end(self, outs):
-        # outs is a list of whatever you returned in `validation_step`
-        loss = torch.stack(outs).mean()
-        self.log("val_loss", loss)
-
     def configure_optimizers(self):
         param_optimizer = list(self.named_parameters())
         no_decay = ["bias", "gamma", "beta"]
