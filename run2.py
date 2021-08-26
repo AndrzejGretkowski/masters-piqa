@@ -45,7 +45,7 @@ def main(
 
     # Model & Tokenizer
     if model_type == "roberta":
-        model = RobertaPIQA()
+        model = RobertaPIQA(learning_rate=learning_rate)
         tokenizer = RobertaPIQATokenizer.from_pretrained("roberta-large")
     elif model_type == "alberta":
         raise NotImplementedError("Alberta model has not been implemented yet.")

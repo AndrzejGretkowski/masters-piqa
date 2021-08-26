@@ -7,12 +7,13 @@ import torch.nn.functional as F
 
 
 class RobertaPIQA(pl.LightningModule):
-    def __init__(self):
+    def __init__(self, learning_rate: float):
         super().__init__()
         config = RobertaConfig.from_pretrained('roberta-large')
         config.num_labels = 2
         self.num_labels = config.num_labels
         self.config = config
+        self.lr = learning_rate
 
         self.model = RobertaForMultipleChoice(config).from_pretrained('roberta-large', num_labels=self.num_labels)
         # self.model.init_weights()
@@ -84,6 +85,6 @@ class RobertaPIQA(pl.LightningModule):
                 ]
         optimizer = torch.optim.AdamW(
                 optimizer_grouped_parameters,
-                lr=2e-5,
+                lr=self.lr,
                 )
         return optimizer
