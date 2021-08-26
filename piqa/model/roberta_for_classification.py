@@ -35,7 +35,13 @@ class RobertaPIQA(pl.LightningModule):
             labels=label)
 
         loss = output.loss
+        out = torch.argmax(output.logits, dim=1)
+        correct = sum(out == label).item()
+        acc = correct / len(label)
+
+        # make so that the loss is logged
         self.log('train_loss', loss)
+        self.log('train_accuracy', acc, on_epoch=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -56,7 +62,7 @@ class RobertaPIQA(pl.LightningModule):
         correct = sum(out == label).item()
         acc = correct / len(label)
 
-        # make so that the loss is summed
+        # make so that the loss is logged
         self.log('val_loss', loss)
         self.log('val_accuracy', acc, on_epoch=True, prog_bar=True)
         return {'loss': loss, 'logits': output.logits, 'output': out, 'correct': correct}
@@ -78,20 +84,7 @@ class RobertaPIQA(pl.LightningModule):
         return {'loss': 0.0, 'logits': output.logits, 'output': out}
 
     def configure_optimizers(self):
-        param_optimizer = list(self.named_parameters())
-        no_decay = ["bias", "gamma", "beta"]
-        optimizer_grouped_parameters = [
-                {
-                    "params": [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)],
-                    "weight_decay_rate": 0.01
-                    },
-                {
-                    "params": [p for n, p in param_optimizer if any(nd in n for nd in no_decay)],
-                    "weight_decay_rate": 0.0
-                    },
-                ]
-        optimizer = torch.optim.AdamW(
-                optimizer_grouped_parameters,
-                lr=self.lr,
-                )
-        return optimizer
+        return torch.optim.AdamW(
+            self.parameters(),
+            lr=self.lr,
+        )
