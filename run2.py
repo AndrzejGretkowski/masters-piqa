@@ -12,6 +12,7 @@ from piqa.model.models import PIQAModel
 from piqa.model.tokenizers import PIQATokenizer
 
 import pytorch_lightning as pl
+from pytorch_lightning.callbacks import EarlyStopping, GPUStatsMonitor, ModelCheckpoint
 
 
 def main(
@@ -68,8 +69,16 @@ def main(
     valid_set = tokenizer.tokenize_data_set(valid_set)
     validloader = DataLoader(valid_set, shuffle=False, collate_fn=collate_fn, batch_size=batch_size)
 
+    # Load callbacks
+    callbacks = []
+    callbacks.append(EarlyStopping('val_loss', min_delta=0.01, patience=4))
+    if save_path is not None:
+        callbacks.append(ModelCheckpoint(save_path, filename='{epoch}-{val_loss:.2f}'))
+    if gpus > 0:
+        callbacks.append(GPUStatsMonitor(True, False, False, False, False, False))
+
     # Training
-    trainer = pl.Trainer(gpus=gpus, auto_scale_batch_size=False)
+    trainer = pl.Trainer(gpus=gpus, auto_scale_batch_size=False, callbacks=callbacks)
     trainer.fit(model, trainloader, validloader)
 
     print("Finished Training")
