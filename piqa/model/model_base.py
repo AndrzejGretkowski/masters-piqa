@@ -1,27 +1,35 @@
+from abc import ABC, abstractmethod
+
+import pytorch_lightning as pl
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from transformers import RobertaConfig, RobertaForMultipleChoice
-
-from piqa.model.model_base import BaseModelPIQA
-
-
-class RobertaPIQA(BaseModelPIQA):
-    def get_config(self):
-        return RobertaConfig
-
-    def get_model(self):
-        return RobertaForMultipleChoice
+from transformers.modeling_outputs import MultipleChoiceModelOutput
 
 
-class RobertaPIQA(pl.LightningModule):
-    def __init__(self, learning_rate: float, roberta_type: str = 'roberta-base'):
+class BaseModelPIQA(pl.LightningModule, ABC):
+    def __init__(self, learning_rate: float, model_type: str):
         super().__init__()
-        config = RobertaConfig.from_pretrained(roberta_type)
+        config = RobertaConfig.from_pretrained(model_type)
+        config = self.get_config.from_pretrained(model_type)
         config.num_labels = 2
         self.num_labels = config.num_labels
         self.config = config
         self.lr = learning_rate
 
-        self.model = RobertaForMultipleChoice(config).from_pretrained(roberta_type, num_labels=self.num_labels)
+        self.model = self.get_model(config).from_pretrained(model_type, num_labels=self.num_labels)
         # self.model.init_weights()
+
+    @property    
+    @abstractmethod
+    def get_config(self):
+        """Return a pretrained config class."""
+
+    @property
+    @abstractmethod
+    def get_model(self):
+        """Return a model class."""      
 
     def forward(self, *args, **kwargs) -> MultipleChoiceModelOutput:
         return self.model.forward(*args, **kwargs)

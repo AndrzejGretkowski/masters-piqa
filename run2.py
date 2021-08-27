@@ -5,12 +5,11 @@ from warnings import warn
 import torch
 from torch import nn as nn
 from torch import optim as optim
-from torch.nn.functional import softmax
 from torch.utils.data import DataLoader
 
 from piqa.data import PiqaDataset
-from piqa.model.roberta_for_classification import RobertaPIQA
-from piqa.model.roberta_tokenizer import RobertaPIQATokenizer
+from piqa.model.models import PIQAModel
+from piqa.model.tokenizers import PIQATokenizer
 
 import pytorch_lightning as pl
 
@@ -44,13 +43,11 @@ def main(
     test_set = PiqaDataset("test", fix=fix_valid_set)
 
     # Model & Tokenizer
-    if model_type.startswith('roberta'):
-        model = RobertaPIQA(learning_rate=learning_rate, roberta_type=model_type)
-        tokenizer = RobertaPIQATokenizer.from_pretrained(model_type)
-    elif model_type == "alberta":
-        raise NotImplementedError("Alberta model has not been implemented yet.")
-    else:
-        raise RuntimeError(f"{model_type} is not supported.")
+    try:
+        model = PIQAModel.get(model_type)(learning_rate=learning_rate, model_type=model_type)
+        tokenizer = PIQATokenizer.get(model_type)(model_type)
+    except TypeError:
+        raise RuntimeError(f'{model_type} has not been implemented.')
 
     # Load finetuned weights
     if model_path is not None:
@@ -64,11 +61,11 @@ def main(
 
     # Pre-tokenize data sets
     collate_fn = lambda x: tokenizer.collate_fn(x, pad_token=tokenizer.pad_token_id)
-    train_set = tokenizer.tokenize_data_set(train_set, 512)
+    train_set = tokenizer.tokenize_data_set(train_set)
     trainloader = DataLoader(train_set, shuffle=True, collate_fn=collate_fn, batch_size=batch_size)
-    test_set = tokenizer.tokenize_data_set(test_set, 512)
+    test_set = tokenizer.tokenize_data_set(test_set)
     testloader = DataLoader(test_set, shuffle=False, collate_fn=collate_fn)
-    valid_set = tokenizer.tokenize_data_set(valid_set, 512)
+    valid_set = tokenizer.tokenize_data_set(valid_set)
     validloader = DataLoader(valid_set, shuffle=False, collate_fn=collate_fn, batch_size=batch_size)
 
     # Training
