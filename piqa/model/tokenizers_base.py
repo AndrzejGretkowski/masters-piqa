@@ -7,6 +7,7 @@ from torch.nn.utils.rnn import pad_sequence
 class BaseTokenizerPIQA(ABC):
     def __init__(self, model_type):
         self.tokenizer = self.get_tokenizer.from_pretrained(model_type)
+        self.pad_token_id = self.tokenizer.pad_token_id
 
     @property
     @abstractmethod
