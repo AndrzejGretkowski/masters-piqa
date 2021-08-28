@@ -16,7 +16,9 @@ class PiqaDataset(Dataset):
 
         # This merges validation data set into train and takes a bit from train to valid
         if fix is True and name in {'valid', 'train'}:
+            _ = downloader.download_set('train')
             train_loader = Loader('train')
+            _ = downloader.download_set('valid')
             valid_loader = Loader('valid')
 
             train_data = train_loader.load()

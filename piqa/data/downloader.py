@@ -27,6 +27,8 @@ class Downloader(object):
         for set_file in PIQA_DATA_SETS[set_name]:
             if set_file is not None:
                 local_name = Path(LOCAL_FILE_LOCATION, set_name, set_file)
+                # Create dir if necessary
+                local_name.parent.mkdir(parents=True, exist_ok=True)
                 self._download_file(
                     urljoin(PIQA_DATA_URL, set_file),
                     local_name
