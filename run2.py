@@ -71,7 +71,7 @@ def main(
 
     # Load callbacks
     callbacks = []
-    callbacks.append(EarlyStopping('val_accuracy', min_delta=0.01, patience=5))
+    callbacks.append(EarlyStopping('val_accuracy', min_delta=0.01, patience=5, mode='max', verbose=True))
     if save_path is not None:
         callbacks.append(ModelCheckpoint(save_path, filename='{epoch}-{val_loss:.2f}'))
     if gpus > 0:
