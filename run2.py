@@ -1,4 +1,6 @@
 import argparse
+import pickle
+from pathlib import Path
 from typing import Optional
 from warnings import warn
 
@@ -16,6 +18,7 @@ from pytorch_lightning.callbacks import EarlyStopping, GPUStatsMonitor, ModelChe
 
 
 def main(
+    experiment_type: str,
     model_type: str,
     model_path: Optional[str],
     save_path: Optional[str],
@@ -32,12 +35,6 @@ def main(
         warn('GPU is not available on this machine. Using CPU instead.')
     device = torch.device('cuda') if gpus > 0 else torch.device('cpu')
 
-    # TQDM
-    if notebook:
-        from tqdm.notebook import tqdm
-    else:
-        from tqdm import tqdm
-
     # Training data
     train_set = PiqaDataset("train", fix=fix_valid_set)
     valid_set = PiqaDataset("valid", fix=fix_valid_set)
@@ -46,7 +43,7 @@ def main(
     # Model & Tokenizer
     try:
         model = PIQAModel.get(model_type)(learning_rate=learning_rate, model_type=model_type)
-        tokenizer = PIQATokenizer.get(model_type)(model_type)
+        tokenizer = PIQATokenizer.get(model_type)(experiment_type, model_type, tqdm_arg=notebook)
     except TypeError:
         raise RuntimeError(f'{model_type} has not been implemented.')
 
@@ -62,12 +59,26 @@ def main(
 
     # Pre-tokenize data sets
     collate_fn = lambda x: tokenizer.collate_fn(x, pad_token=tokenizer.pad_token_id)
+    all_sets_path = Path(f'./data/{tokenizer._type}.pkl')
+    if all_sets_path.exists():
+        with open(all_sets_path, 'rb') as f:
+            all_sets = pickle.load(f)
+        train_set = all_sets['train']
+        test_set = all_sets['test']
+        valid_set = all_sets['valid']
+    else:
+        train_set = tokenizer.pretokenize_data_set(train_set)
+        valid_set = tokenizer.pretokenize_data_set(valid_set)
+        test_set = tokenizer.pretokenize_data_set(test_set)
+        with open(all_sets_path, 'wb') as f:
+            pickle.dump({'train': train_set, 'test': test_set, 'valid': valid_set}, f)
+
+    valid_set = tokenizer.tokenize_data_set(valid_set)
+    test_set = tokenizer.tokenize_data_set(test_set)
     train_set = tokenizer.tokenize_data_set(train_set)
     trainloader = DataLoader(train_set, shuffle=True, collate_fn=collate_fn, batch_size=batch_size)
-    test_set = tokenizer.tokenize_data_set(test_set)
-    testloader = DataLoader(test_set, shuffle=False, collate_fn=collate_fn)
-    valid_set = tokenizer.tokenize_data_set(valid_set)
     validloader = DataLoader(valid_set, shuffle=False, collate_fn=collate_fn, batch_size=batch_size)
+    testloader = DataLoader(test_set, shuffle=False, collate_fn=collate_fn)
 
     # Load callbacks
     callbacks = []
@@ -94,10 +105,18 @@ def parse_args():
         help="if valid test should be patched",
     )
     parser.add_argument(
+        "-t",
+        "--experiment-type",
+        type=str,
+        choices=["baseline", "definition", "affordance"],
+        default="baseline",
+        help="What type of experiment to run."
+    )
+    parser.add_argument(
         "-m",
         "--model-type",
         type=str,
-        choices=["roberta-large", "roberta-base"],
+        choices=list(PIQAModel.model_mapping.keys()),
         default="roberta-base",
         help="type of model to use",
     )
@@ -131,6 +150,7 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
     main(
+        experiment_type=args.experiment_type,
         model_type=args.model_type,
         model_path=args.model_path,
         save_path=args.save_path,
