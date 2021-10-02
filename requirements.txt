@@ -1,9 +1,19 @@
 # models, NN
+pytorch-lightning==1.4.2
 transformers>=4.4,<5.0
 numpy>=1.10,<2.0
 spacy>=3.0,<4.0
 scikit-learn>=0.22,<1.0
-pytorch-lightning==1.4.2
+
+# natural language
+python-rake>=1.5.0,<1.6
+rake-nltk>=1.0.6,<1.1
+ConceptNet>=5.7.0,<5.8
+conceptnet-lite>=0.1.27,<0.2
+pywiktionary>=0.4a1.post1,<0.5
+yake>=0.4.8,<0.5
 
 # utils
 requests>=2.0,<3.0
+ratelimit>=2.2.1,<2.3
+inflection>=0.5.1,<0.6

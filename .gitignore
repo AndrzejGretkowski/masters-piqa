@@ -1,6 +1,8 @@
 # Project specific
 *.jsonl
 *.lst
+*.pkl
+*.db
 
 
 # Byte-compiled / optimized / DLL files
