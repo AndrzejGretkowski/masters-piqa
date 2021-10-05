@@ -10,15 +10,23 @@ class WordExtractor(object):
         nltk.download('wordnet')
 
         self._lemma = WordNetLemmatizer()
-        self._extractor = KeywordExtractor(
-            n=ngram,
-            top=return_words
-        )
+        self._initalized = False
+        self.ngram = ngram
+        self.return_words = return_words
+
+    def _init(self):
+        if not self._initalized:
+            self._extractor = KeywordExtractor(
+                n=self.ngram,
+                top=self.return_words
+            )
+            self._initalized = True
 
     def __call__(self, text: str) -> list:
         return self._get_ranked_phrases(text)
 
     def _get_ranked_phrases(self, text: str) -> list:
+        self._init()
         keywords = self._extractor.extract_keywords(text)
         ret_keywords = []
         for keyword, score in keywords:

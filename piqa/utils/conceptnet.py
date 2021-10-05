@@ -73,11 +73,18 @@ class ConceptNetWebInterface(BaseConceptNet):
 
 class ConceptNetLocalInterface(BaseConceptNet):
     def __init__(self, language='en', cache_size=1000, path: str = './data/conceptnet/concpetnet.db'):
-        self._connection = conceptnet_lite.connect(path)
         self._lang = language
         self._cache = CacheDict(maxlen=cache_size)
+        self._initialized = False
+        self._path = path
+
+    def _init(self):
+        if not self._initialized:
+            self._connection = conceptnet_lite.connect(self._path)
+            self._initialized = True
 
     def _get_node(self, word_or_phrase: str):
+        self._init()
         correct_uri = self._join_phrase_correctly(word_or_phrase)
         if correct_uri in self._cache:
             return self._cache[correct_uri]

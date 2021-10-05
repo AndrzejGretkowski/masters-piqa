@@ -4,12 +4,12 @@ import pickle
 import torch
 from torch.nn.utils.rnn import pad_sequence
 
-from piqa.model.conceptnet_base import ConceptNetTokenizer
+from piqa.model.conceptnet_base import AffordanceType, ConceptNetTokenizer
 
 
 class BaseTokenizerPIQA(ConceptNetTokenizer, ABC):
-    def __init__(self, experiment_type, model_type, tqdm_arg):
-        super().__init__(experiment_type)
+    def __init__(self, experiment_type, ngram, return_words, definition_length, affordance_type, model_type, tqdm_arg):
+        super().__init__(experiment_type, ngram, return_words, definition_length, affordance_type)
 
         if tqdm_arg:
         # TQDM
@@ -41,7 +41,10 @@ class BaseTokenizerPIQA(ConceptNetTokenizer, ABC):
 
     def tokenize_data_set(self, dataset):
         for item in dataset:
-            out = self.tokenizer([item['goal']] * 2, [item['sol1'], item['sol2']], return_tensors='pt', padding=True, truncation=True)
+            sol1 = self.append_text(item['sol1'][0], item['sol1'][1:])
+            sol2 = self.append_text(item['sol2'][0], item['sol2'][1:])
+
+            out = self.tokenizer([item['goal']] * 2, [sol1, sol2], return_tensors='pt', padding=True, truncation=True)
             out['input_ids'] = out['input_ids'].transpose(1, 0)
             out['attention_mask'] = out['attention_mask'].transpose(1, 0)
             out['token_type_ids'] = torch.zeros(out['input_ids'].size(), dtype=torch.long)
@@ -49,6 +52,12 @@ class BaseTokenizerPIQA(ConceptNetTokenizer, ABC):
         return dataset
 
     def tokenize_data_set_baseline(self, dataset):
+        for item in dataset:
+            item.update({
+                'sol1': [item['sol1']],
+                'sol2': [item['sol2']],
+            })
+
         return dataset
 
     def tokenize_data_set_definition(self, dataset):
@@ -58,15 +67,9 @@ class BaseTokenizerPIQA(ConceptNetTokenizer, ABC):
             sol1_def = self.definition_parse(item['sol1'])
             sol2_def = self.definition_parse(item['sol2'])
 
-            sol1 = self.append_text(item['sol1'], [sol1_def, goal_def])
-            sol2 = self.append_text(item['sol2'], [sol2_def, goal_def])
-
-            item['sol1'] = sol1
-            item['sol2'] = sol2
-
             item.update({
-                'sol1': sol1,
-                'sol2': sol2
+                'sol1': [item['sol1'], sol1_def, goal_def],
+                'sol2': [item['sol2'], sol2_def, goal_def],
             })
 
         return dataset
@@ -77,15 +80,9 @@ class BaseTokenizerPIQA(ConceptNetTokenizer, ABC):
             sol1_defs = self.affordance_parse(item['goal'], item['sol1'])
             sol2_defs = self.affordance_parse(item['goal'], item['sol2'])
 
-            sol1 = self.append_text(item['sol1'], sol1_defs)
-            sol2 = self.append_text(item['sol2'], sol2_defs)
-
-            item['sol1'] = sol1
-            item['sol2'] = sol2
-
             item.update({
-                'sol1': sol1,
-                'sol2': sol2
+                'sol1': [item['sol1']] + sol1_defs,
+                'sol2': [item['sol2']] + sol2_defs,
             })
 
         return dataset

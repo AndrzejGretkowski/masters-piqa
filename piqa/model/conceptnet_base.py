@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from enum import Enum
 from re import split
 from typing import List
 
@@ -7,9 +8,21 @@ from piqa.utils.extract import WordExtractor
 from piqa.utils.wiki import Wiktionary
 
 
+class AffordanceType(Enum):
+    STANDALONE = 1
+    WITH_DEFINITION = 2
+    DEFINITION_WHEN_MISSING = 3
+    JUST_ONE = 4
+
+    def __str__(self):
+        return self.name
+
+
 class ConceptNetTokenizer(object):
-    def __init__(self, experiment_type):
+    def __init__(self, experiment_type, ngram, return_words, definition_length, affordance_type):
         self._type = experiment_type
+        self._affordance_type = affordance_type
+        self._def_length = definition_length
 
         self._correct_relations = set([
             'CapableOf',
@@ -30,7 +43,7 @@ class ConceptNetTokenizer(object):
         ])
 
         if self._type != "baseline":
-            self.extractor = WordExtractor()
+            self.extractor = WordExtractor(ngram=ngram, return_words=return_words)
             self.wiki = Wiktionary()
             self.concept = ConceptNetLocalInterface()
 
@@ -51,7 +64,8 @@ class ConceptNetTokenizer(object):
 
     def definition_parse(self, text: str) -> str:
         phrases = self.get_important_phrases(text)
-        return self._get_definition_from_phrases(phrases)[:250]
+        definition = ' '.join(self._get_definition_from_phrases(phrases).split()[:self._def_length])
+        return definition
 
     def _get_definition_from_phrases(self, phrases: List[str]) -> str:
         for phrase in phrases:
@@ -82,20 +96,52 @@ class ConceptNetTokenizer(object):
                         top_sol = sol_phrase
                     sol_texts.append(self.concept.get_surface_text(top_goal, top_sol, relation))
 
-        if relation is not None:
-            indx = goal_phrases.index(top_goal)
-            goal_phrases.insert(0, goal_phrases.pop(indx))
-
-            indx = solution_phrases.index(top_sol)
-            solution_phrases.insert(0, solution_phrases.pop(indx))
-
-        sol_def = self._get_definition_from_phrases(solution_phrases)[:250]
-        goal_def = self._get_definition_from_phrases(goal_phrases)[:250]
-
         sol_texts = set([s for s in sol_texts if s])
-        if sol_texts:
-            sol_text = '. '.join(sol_texts) + '.'
-            sol_text = sol_text.replace('..', '.')
-            return [sol_text, sol_def, goal_def]
+
+        if self._affordance_type == AffordanceType.STANDALONE:
+            if sol_texts:
+                sol_text = '. '.join(sol_texts) + '.'
+                sol_text = sol_text.replace('..', '.')
+                return [sol_text]
+            else:
+                return []
+
+        elif self._affordance_type == AffordanceType.WITH_DEFINITION:
+
+            if relation is not None:
+                indx = goal_phrases.index(top_goal)
+                goal_phrases.insert(0, goal_phrases.pop(indx))
+
+                indx = solution_phrases.index(top_sol)
+                solution_phrases.insert(0, solution_phrases.pop(indx))
+
+            sol_def = self._get_definition_from_phrases(solution_phrases)
+            sol_def = ' '.join(sol_def.split()[:self._def_length])
+
+            if sol_texts:
+                sol_text = '. '.join(sol_texts) + '.'
+                sol_text = sol_text.replace('..', '.')
+                return [sol_text, sol_def]
+            else:
+                return [sol_def]
+
+        elif self._affordance_type == AffordanceType.DEFINITION_WHEN_MISSING:
+            if sol_texts:
+                sol_text = '. '.join(sol_texts) + '.'
+                sol_text = sol_text.replace('..', '.')
+                return [sol_text]
+            else:
+                sol_def = self._get_definition_from_phrases(solution_phrases)
+                sol_def = ' '.join(sol_def.split()[:self._def_length])
+                return [sol_def]
+
+        elif self._affordance_type == AffordanceType.JUST_ONE:
+            if sol_texts:
+                sol_text = sol_texts[0]
+                sol_text = sol_text.replace('..', '.')
+                return [sol_text]
+            else:
+                return []
+
         else:
-            return [sol_def, goal_def]
+            raise RuntimeError(f'Wrong affordance type: {self._affordance_type}')
