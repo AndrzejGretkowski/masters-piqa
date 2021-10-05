@@ -67,7 +67,7 @@ def main(
     collate_fn = lambda x: tokenizer.collate_fn(x, pad_token=tokenizer.pad_token_id)
     if tokenizer._type == 'affordance':
         all_sets_path = Path(f'./data/{tokenizer._type}_{ngrams}_{return_words}_{definition_length}_{affordance_type}.pkl')
-    if tokenizer._type == 'definition':
+    elif tokenizer._type == 'definition':
         all_sets_path = Path(f'./data/{tokenizer._type}_{ngrams}_{return_words}_{definition_length}.pkl')
     else:
         all_sets_path = Path(f'./data/{tokenizer._type}.pkl')
