@@ -1,5 +1,6 @@
 from transformers import (AlbertConfig, AlbertForMultipleChoice, RobertaConfig,
-                          RobertaForMultipleChoice)
+                          RobertaForMultipleChoice, DistilBertModel, DistilBertConfig
+)
 
 from piqa.model.model_base import BaseModelPIQA
 
@@ -31,7 +32,7 @@ class RobertaPIQA(BaseModelPIQA):
         return RobertaForMultipleChoice
 
 
-@PIQAModel.register('albert-base-v2', 'albert-large-v2')
+@PIQAModel.register('albert-base-v2', 'albert-large-v2', 'albert-xlarge-v2', 'albert-xxlarge-v2')
 class AlbertPIQA(BaseModelPIQA):
     @property
     def get_config(self):
@@ -40,3 +41,14 @@ class AlbertPIQA(BaseModelPIQA):
     @property
     def get_model(self):
         return AlbertForMultipleChoice
+
+
+@PIQAModel.register('distilbert-base-uncased')
+class DistilPIQA(BaseModelPIQA):
+    @property
+    def get_config(self):
+        return DistilBertConfig
+
+    @property
+    def get_model(self):
+        return DistilBertModel
