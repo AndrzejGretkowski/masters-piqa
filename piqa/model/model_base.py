@@ -18,6 +18,7 @@ class BaseModelPIQA(pl.LightningModule, ABC):
         self.config = config
         self.lr = learning_rate
 
+        self._model_type = model_type
         self.model = self.get_model(config).from_pretrained(model_type, num_labels=self.num_labels)
         # self.model.init_weights()
 
@@ -29,7 +30,7 @@ class BaseModelPIQA(pl.LightningModule, ABC):
     @property
     @abstractmethod
     def get_model(self):
-        """Return a model class."""      
+        """Return a model class."""
 
     def forward(self, *args, **kwargs) -> MultipleChoiceModelOutput:
         return self.model.forward(*args, **kwargs)
@@ -41,11 +42,18 @@ class BaseModelPIQA(pl.LightningModule, ABC):
         token_type = batch['token_type_ids']
         label = batch['label']
         # forward + loss
-        output = self.model(
-            input_ids=input,
-            attention_mask=mask,
-            token_type_ids=token_type,
-            labels=label)
+
+        if self._model_type.startswith('distilbert'):
+            output = self.model(
+                input_ids=input,
+                attention_mask=mask,
+                labels=label)
+        else:
+            output = self.model(
+                input_ids=input,
+                attention_mask=mask,
+                token_type_ids=token_type,
+                labels=label)
 
         loss = output.loss
         out = torch.argmax(output.logits, dim=1)
@@ -64,11 +72,18 @@ class BaseModelPIQA(pl.LightningModule, ABC):
         token_type = batch['token_type_ids']
         label = batch['label']
         # forward + loss
-        output = self.model(
-            input_ids=input,
-            attention_mask=mask,
-            token_type_ids=token_type,
-            labels=label)
+
+        if self._model_type.startswith('distilbert'):
+            output = self.model(
+                input_ids=input,
+                attention_mask=mask,
+                labels=label)
+        else:
+            output = self.model(
+                input_ids=input,
+                attention_mask=mask,
+                token_type_ids=token_type,
+                labels=label)
 
         loss = output.loss
         out = torch.argmax(output.logits, dim=1)
@@ -86,10 +101,18 @@ class BaseModelPIQA(pl.LightningModule, ABC):
         mask = batch['attention_mask']
         token_type = batch['token_type_ids']
         # forward + loss
-        output = self.model(
-            input_ids=input,
-            attention_mask=mask,
-            token_type_ids=token_type)
+        if self._model_type.startswith('distilbert'):
+            output = self.model(
+                input_ids=input,
+                attention_mask=mask,
+            )
+        else:
+            output = self.model(
+                input_ids=input,
+                attention_mask=mask,
+                token_type_ids=token_type,
+            )
+
 
         out = torch.argmax(output.logits, dim=1)
 

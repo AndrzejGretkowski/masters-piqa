@@ -118,7 +118,14 @@ class BaseTokenizerPIQA(ConceptNetTokenizer, ABC):
 
     def append_text(self, text, texts_to_append):
         res_text = text
-        for text_to_append in texts_to_append:
-            if text_to_append:
-                res_text += f'{self.sep_token}{self.sep_token}{text_to_append}'
+
+        if self._model_type.startswith('roberta'):
+            for text_to_append in texts_to_append:
+                if text_to_append:
+                    res_text += f'{self.sep_token}{self.sep_token}{text_to_append}'
+        else:
+            for text_to_append in texts_to_append:
+                if text_to_append:
+                    res_text += f'{self.sep_token}{text_to_append}'
+
         return res_text
