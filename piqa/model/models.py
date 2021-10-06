@@ -1,5 +1,5 @@
 from transformers import (AlbertConfig, AlbertForMultipleChoice, RobertaConfig,
-                          RobertaForMultipleChoice, DistilBertModel, DistilBertConfig
+                          RobertaForMultipleChoice, DistilBertForMultipleChoice, DistilBertConfig
 )
 
 from piqa.model.model_base import BaseModelPIQA
@@ -51,4 +51,4 @@ class DistilPIQA(BaseModelPIQA):
 
     @property
     def get_model(self):
-        return DistilBertModel
+        return DistilBertForMultipleChoice

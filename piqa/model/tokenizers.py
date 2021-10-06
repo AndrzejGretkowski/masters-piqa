@@ -1,4 +1,4 @@
-from transformers import AlbertTokenizerFast, RobertaTokenizerFast
+from transformers import AlbertTokenizerFast, RobertaTokenizerFast, DistilBertTokenizerFast
 
 from piqa.model.tokenizers_base import BaseTokenizerPIQA
 
@@ -26,8 +26,14 @@ class RobertaPIQATokenizer(BaseTokenizerPIQA):
         return RobertaTokenizerFast
 
 
-@PIQATokenizer.register('albert-base-v2', 'albert-large-v2')
-class AlbertIQATokenizer(BaseTokenizerPIQA):
+@PIQATokenizer.register('albert-base-v2', 'albert-large-v2', 'albert-xlarge-v2', 'albert-xxlarge-v2')
+class AlbertPIQATokenizer(BaseTokenizerPIQA):
     @property
     def get_tokenizer(self):
         return AlbertTokenizerFast
+
+@PIQATokenizer.register('distilbert-base-uncased')
+class DistilPIQATokenizer(BaseTokenizerPIQA):
+    @property
+    def get_tokenizer(self):
+        return DistilBertTokenizerFast
