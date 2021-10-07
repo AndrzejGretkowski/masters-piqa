@@ -96,7 +96,7 @@ class ConceptNetTokenizer(object):
                         top_sol = sol_phrase
                     sol_texts.append(self.concept.get_surface_text(top_goal, top_sol, relation))
 
-        sol_texts = set([s for s in sol_texts if s])
+        sol_texts = list(OrderedDict.fromkeys([s for s in sol_texts if s]))
 
         if self._affordance_type == AffordanceType.STANDALONE:
             if sol_texts:
