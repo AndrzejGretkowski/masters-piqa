@@ -1,5 +1,5 @@
 # models, NN
-pytorch-lightning==1.4.2
+pytorch-lightning==1.6.0rc1
 transformers>=4.4,<5.0
 numpy>=1.10,<2.0
 spacy>=3.0,<4.0
